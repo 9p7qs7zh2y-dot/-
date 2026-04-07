@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
 import json
-import os
 from datetime import datetime
 
 app = FastAPI(title="Koala Quest API")
@@ -19,9 +18,8 @@ class TapAction(BaseModel):
     user_id: int
     taps_count: int
 
-# ===== ДЛЯ RENDER (ПОСТОЯННЫЙ ДИСК) =====
-DB_PATH = "/var/data/koala_quest.db"
-os.makedirs("/var/data", exist_ok=True)
+# ===== ПРОСТОЙ ПУТЬ ДЛЯ БАЗЫ ДАННЫХ (без os.makedirs) =====
+DB_PATH = "koala_quest.db"
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
