@@ -3,13 +3,22 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 import os
 from flask import Flask
 import threading
+import time
 
 # Получаем токен из переменных окружения Render
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8237220454:AAHIs1zJ_h2db7tbPFu7DJWTpp9_PwoLOls")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ===== ВЕБ-СЕРВЕР ДЛЯ RENDER (чтобы был открытый порт) =====
+# ===== ПРИНУДИТЕЛЬНЫЙ СБРОС WEBHOOK =====
+try:
+    bot.remove_webhook()
+    time.sleep(1)
+    print("✅ Webhook удалён")
+except Exception as e:
+    print(f"⚠️ Ошибка удаления webhook: {e}")
+
+# ===== ВЕБ-СЕРВЕР ДЛЯ RENDER =====
 web_app = Flask(__name__)
 
 @web_app.route('/')
@@ -21,14 +30,14 @@ def health():
     return {"status": "alive"}, 200
 
 def run_web():
-    web_app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+    web_app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)), threaded=True)
 
 # Запускаем веб-сервер в отдельном потоке
 web_thread = threading.Thread(target=run_web, daemon=True)
 web_thread.start()
+print("🌐 Веб-сервер запущен")
 
 # ===== ОСНОВНОЙ КОД БОТА =====
-# Кнопка запуска мини-приложения
 game_button = KeyboardButton(
     text="🐨 Тапать!",
     web_app=WebAppInfo(url="https://9p7qs7zh2y-dot.github.io/vallid/")
@@ -85,8 +94,15 @@ def handle_other(message):
 
 if __name__ == "__main__":
     print('✅ Бот-коала запущен!')
-    print('🌐 Веб-сервер запущен на порту 10000')
-    # Удаляем старый webhook перед запуском
-    bot.remove_webhook()
-    # Запускаем polling
-    bot.infinity_polling(skip_pending=True)
+    
+    # Дополнительная задержка перед запуском polling
+    time.sleep(2)
+    
+    # Запускаем polling с обработкой ошибок
+    while True:
+        try:
+            bot.infinity_polling(skip_pending=True, timeout=60)
+        except Exception as e:
+            print(f"⚠️ Ошибка: {e}")
+            print("🔄 Перезапуск через 5 секунд...")
+            time.sleep(5)
